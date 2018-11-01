@@ -19,27 +19,77 @@ using System.Windows.Threading;
 
 namespace Tomato
 {
+    internal enum AccentState
+    {
+        ACCENT_DISABLED = 0,
+        ACCENT_ENABLE_GRADIENT = 1,
+        ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+        ACCENT_ENABLE_BLURBEHIND = 3,
+        ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+        ACCENT_INVALID_STATE = 5
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AccentPolicy
+    {
+        public AccentState AccentState;
+        public uint AccentFlags;
+        public uint GradientColor;
+        public uint AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WindowCompositionAttributeData
+    {
+        public WindowCompositionAttribute Attribute;
+        public IntPtr Data;
+        public int SizeOfData;
+    }
+
+    internal enum WindowCompositionAttribute
+    {
+        // ...
+        WCA_ACCENT_POLICY = 19
+        // ...
+    }
+
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow : Window
     {
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MARGINS
+        [DllImport("user32.dll")]
+        internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+        private uint _blurBackgroundColor = 0xffffff; /* BGR color format */
+        private uint _blurOpacity = 0x40;
+
+        void EnableBlur()
         {
-            public int cxLeftWidth;
-            public int cxRightWidth;
-            public int cyTopHeight;
-            public int cyBottomHeight;
-        };
+            var windowHelper = new WindowInteropHelper(this);
+
+            var accent = new AccentPolicy();
+            accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
+            accent.GradientColor = (_blurOpacity << 24) | (_blurBackgroundColor & 0xFFFFFF);
+
+            var accentStructSize = Marshal.SizeOf(accent);
+
+            var accentPtr = Marshal.AllocHGlobal(accentStructSize);
+            Marshal.StructureToPtr(accent, accentPtr, false);
+
+            var data = new WindowCompositionAttributeData();
+            data.Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY;
+            data.SizeOfData = accentStructSize;
+            data.Data = accentPtr;
+
+            SetWindowCompositionAttribute(windowHelper.Handle, ref data);
+
+            Marshal.FreeHGlobal(accentPtr);
+        }
 
         DispatcherTimer secondTimer;
         Stopwatch stopWatch = new Stopwatch();
 
-        [DllImport("DwmApi.dll")]
-        public static extern int DwmExtendFrameIntoClientArea(
-            IntPtr hwnd,
-            ref MARGINS pMarInset);
+
 
         public MainWindow()
         {
@@ -95,26 +145,17 @@ namespace Tomato
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.Background = Brushes.Transparent;
-            IntPtr mainWindowPtr = new WindowInteropHelper(this).Handle;
-            HwndSource mainWindowSrc = HwndSource.FromHwnd(mainWindowPtr);
-            mainWindowSrc.CompositionTarget.BackgroundColor = Colors.Transparent;
-
-            // 设置Margins
-            MARGINS margins = new MARGINS();
-
-            // 扩展Aero Glass
-            margins.cxLeftWidth = -1;
-            margins.cxRightWidth = -1;
-            margins.cyTopHeight = -1;
-            margins.cyBottomHeight = -1;
-
-            int hr = DwmExtendFrameIntoClientArea(mainWindowSrc.Handle, ref margins);
-   
-            this.Topmost = true;
+            EnableBlur();
         }
 
 
-        private void StartBtn_Click(object sender, RoutedEventArgs e)
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            this.DragMove();
+        }
+
+        private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             bool shouldStart = !stopWatch.IsRunning;
             ResetTimer();
@@ -122,7 +163,6 @@ namespace Tomato
             {
                 stopWatch.Restart();
             }
-            
         }
     }
 }
