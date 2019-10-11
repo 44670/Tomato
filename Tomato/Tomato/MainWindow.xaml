@@ -5,20 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Tomato"
         mc:Ignorable="d"
-        Title="Tomato" Height="87.01" Width="150" Topmost="true" Background="#20000000" Loaded="Window_Loaded" WindowStyle="None" ShowInTaskbar="False" ResizeMode="NoResize" MouseLeftButtonDown="Window_MouseLeftButtonDown" AllowsTransparency="True" MouseDoubleClick="Window_MouseDoubleClick">
+        Title="Tomato" Height="180
+        " Width="150" Topmost="true" Background="#20000000" Loaded="Window_Loaded" WindowStyle="None" ShowInTaskbar="False" ResizeMode="NoResize" MouseLeftButtonDown="Window_MouseLeftButtonDown" AllowsTransparency="True" MouseDoubleClick="Window_MouseDoubleClick">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo/>
     </Window.TaskbarItemInfo>
-
     <Grid Margin="0,0,0,0" >
-
-
-        <Label x:Name="labelTime" Content="25:00" Margin="0,0,0.4,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  VerticalAlignment="Top" Height="87" FontSize="36" Background="Transparent" Foreground="White" >
+        <Label x:Name="labelTime" Margin="0,0,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  VerticalAlignment="Top" Height="90" FontSize="36" Background="Transparent" Foreground="White" >
             <Label.Effect>
                 <DropShadowEffect Color="Black" ShadowDepth="0" Direction="0" BlurRadius="10" />
             </Label.Effect>
         </Label>
+        <ComboBox x:Name="comboTimeUsedFor"  Width="120" Margin="18,116,12.4,44" SelectedIndex="0" >
+            <ComboBoxItem Content="Other"/>
+            <ComboBoxItem Content="Study"/>
+            <ComboBoxItem Content="Work"/>
+            <ComboBoxItem Content="Play"/>
 
+        </ComboBox>
+        <Button x:Name="btnStart" Content="Start" HorizontalAlignment="Left" Margin="39,147,0,0" VerticalAlignment="Top" Width="75" Click="btnStart_Click" />
 
     </Grid>
+
 </Window>

@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.IO;
 
 namespace Tomato
 {
@@ -29,7 +30,7 @@ namespace Tomato
         DispatcherTimer secondTimer;
         Stopwatch stopWatch = new Stopwatch();
 
-
+        const string LogPath = "Log";
 
         public MainWindow()
         {
@@ -38,34 +39,55 @@ namespace Tomato
             secondTimer.IsEnabled = true;
             secondTimer.Interval = TimeSpan.FromSeconds(1);
             secondTimer.Tick += SecondPassed;
+            Directory.CreateDirectory(LogPath);
         }
 
-        long getTimeRemainMs()
+        long GetTimeRemainMs()
         {
             long timeLimit = 25 * 60 * 1000;
-            if (!stopWatch.IsRunning)
+            if (IsDone())
             {
-                return timeLimit;
+                return 0;
             }
             return (timeLimit - stopWatch.ElapsedMilliseconds);
         }
-
-        void UpdateTimeDisplay()
-        {
-            long timeRemain = getTimeRemainMs() / 1000;
-            if (this.IsMouseOver) {
-                labelTime.Content = String.Format("{0:00}:{1:00}", timeRemain / 60, timeRemain % 60);
-            } else
-            {
-                labelTime.Content = String.Format("{0:00}", timeRemain / 60);
-            }
-            
-        }
-
         void ResetTimer()
         {
             stopWatch.Reset();
             UpdateTimeDisplay();
+        }
+
+        bool IsDone()
+        {
+            return !stopWatch.IsRunning;
+        }
+
+        void StartTimer()
+        {
+            stopWatch.Start();
+        }
+
+        void UpdateTimeDisplay()
+        {
+            long timeRemain = GetTimeRemainMs() / 1000;
+            if (IsDone())
+            {
+                labelTime.Content = "DONE";
+                this.Background = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0x00));
+                this.Height = 180;
+            } else
+            {
+                this.Background = new SolidColorBrush(Color.FromArgb(0x20, 0x00, 0x00, 0x00));
+                if (this.IsMouseOver)
+                {
+                    labelTime.Content = String.Format("{0:00}:{1:00}", timeRemain / 60, timeRemain % 60);
+                }
+                else
+                {
+                    labelTime.Content = String.Format("{0:00}", timeRemain / 60);
+                }
+                this.Height = 90;
+            }
         }
 
         void SecondPassed(object sender, EventArgs e)
@@ -75,18 +97,33 @@ namespace Tomato
                 return;
             }
             UpdateTimeDisplay();
-            if (getTimeRemainMs() <= 0)
+            if (GetTimeRemainMs() <= 0)
             {
                 stopWatch.Reset();
-                labelTime.Content = "DONE";
             }
+        }
+
+
+        void UpdateTodayLog(string line)
+        {
+            string fileName = GetLogFileNameByDate(DateTime.Now);
+            if (!File.Exists(fileName))
+            {
+                File.AppendAllText(fileName, "Time,Type,Duration\n");
+            }
+            File.AppendAllText(fileName, line + "\n");
+        }
+
+        string GetLogFileNameByDate(DateTime date)
+        {
+            return "Log\\log-" + date.ToString("yyyyMMdd") + ".csv";
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            UpdateTimeDisplay();
+
         }
-
-
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -98,17 +135,20 @@ namespace Tomato
             {
 
             }
-            
         }
 
         private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            bool shouldStart = !stopWatch.IsRunning;
             ResetTimer();
-            if (shouldStart)
-            {
-                stopWatch.Restart();
-            }
+        }
+
+        private void btnStart_Click(object sender, RoutedEventArgs e)
+        {
+            ResetTimer();
+            StartTimer();
+            UpdateTimeDisplay();
+            string type = comboTimeUsedFor.Text;
+            UpdateTodayLog(DateTime.Now.ToString("HH:mm") + "," + type + "," + "25");
         }
     }
 }
