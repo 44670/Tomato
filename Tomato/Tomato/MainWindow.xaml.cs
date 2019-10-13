@@ -42,22 +42,26 @@ namespace Tomato
             Directory.CreateDirectory(LogPath);
         }
 
-        long GetTimeRemainMs()
+        long GetTimerRemainMs()
         {
             long timeLimit = 25 * 60 * 1000;
-            if (IsDone())
+            if (IsTimerStopped())
             {
-                return 0;
+                return timeLimit;
             }
             return (timeLimit - stopWatch.ElapsedMilliseconds);
         }
         void ResetTimer()
         {
             stopWatch.Reset();
-            UpdateTimeDisplay();
         }
 
-        bool IsDone()
+        void HandleTimerTimeout()
+        {
+            stopWatch.Reset();
+        }
+
+        bool IsTimerStopped()
         {
             return !stopWatch.IsRunning;
         }
@@ -67,14 +71,31 @@ namespace Tomato
             stopWatch.Start();
         }
 
-        void UpdateTimeDisplay()
+        int colorState = 0;
+        Color[] colorTable =
         {
-            long timeRemain = GetTimeRemainMs() / 1000;
-            if (IsDone())
+            Color.FromArgb(0x80, 0xFF, 0xFF, 0),
+            Color.FromArgb(0x20, 0, 0, 0),
+        };
+        void UpdateTimer()
+        {
+
+            long timeRemain = GetTimerRemainMs() / 1000;
+            if (timeRemain < 0)
             {
+                HandleTimerTimeout();
+            }
+            if (IsTimerStopped())
+            {
+
                 labelTime.Content = "DONE";
-                this.Background = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0x00));
+                this.Background = new SolidColorBrush(colorTable[colorState]);
                 this.Height = 180;
+                colorState++;
+                if (colorState >= colorTable.Length)
+                {
+                    colorState = 0;
+                }
             } else
             {
                 this.Background = new SolidColorBrush(Color.FromArgb(0x20, 0x00, 0x00, 0x00));
@@ -92,19 +113,11 @@ namespace Tomato
 
         void SecondPassed(object sender, EventArgs e)
         {
-            if (!stopWatch.IsRunning)
-            {
-                return;
-            }
-            UpdateTimeDisplay();
-            if (GetTimeRemainMs() <= 0)
-            {
-                stopWatch.Reset();
-            }
+            UpdateTimer();
         }
 
 
-        void UpdateTodayLog(string line)
+        void AppendTodayLog(string line)
         {
             string fileName = GetLogFileNameByDate(DateTime.Now);
             if (!File.Exists(fileName))
@@ -121,7 +134,7 @@ namespace Tomato
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            UpdateTimeDisplay();
+            UpdateTimer();
 
         }
 
@@ -146,9 +159,9 @@ namespace Tomato
         {
             ResetTimer();
             StartTimer();
-            UpdateTimeDisplay();
+            UpdateTimer();
             string type = comboTimeUsedFor.Text;
-            UpdateTodayLog(DateTime.Now.ToString("HH:mm") + "," + type + "," + "25");
+            AppendTodayLog(DateTime.Now.ToString("HH:mm") + "," + type + "," + "25");
         }
     }
 }
